@@ -1,4 +1,4 @@
-from conans import ConanFile, ConfigureEnvironment
+from conans import ConanFile, AutoToolsBuildEnvironment
 import os
 from os import path
 import multiprocessing
@@ -62,37 +62,31 @@ class SodiumConanFile(ConanFile):
         os.chdir(self.EXTRACTED_FOLDER_NAME)
 
     def configure_and_make(self):
-        env = ConfigureEnvironment(self.deps_cpp_info, self.settings)
-        self.run_configure(env)
-        self.run("%s make -j %i" % (env.command_line, multiprocessing.cpu_count()))
-        self.run("%s make install" % env.command_line)
+        env = AutoToolsBuildEnvironment(self)
+        configure_args = self.get_configure_args()
+        print("./configure", " ".join(configure_args))
+        env.configure(args=configure_args)
+        env.make(args=["-j", str(multiprocessing.cpu_count())])
+        env.make(args=["install"])
 
-    def run_configure(self, env):
-        options = self.make_configure_options()
-        configure_file = path.join('.', 'configure')
-        configure_cmd = "%s %s %s" % (env.command_line, configure_file, options)
-        self.output.info(configure_cmd)
-
-        self.run(configure_cmd)
-
-    def make_configure_options(self):
-        opts = [
+    def get_configure_args(self):
+        args = [
             "--prefix=%s" % self.install_dir,
 
-            self.autotools_bool_option("shared", self.options.shared),
-            self.autotools_bool_option("static", not self.options.shared),
-            self.autotools_bool_option("soname-versions", self.options.use_soname)
+            self.autotools_bool_arg("shared", self.options.shared),
+            self.autotools_bool_arg("static", not self.options.shared),
+            self.autotools_bool_arg("soname-versions", self.options.use_soname)
         ]
 
         if self.options.use_pie != "Default":
-            opts.append(self.autotools_bool_option("pie", self.options.use_pie))
+            args.append(self.autotools_bool_option("pie", self.options.use_pie))
 
-        return " ".join(opts)
+        return args
 
-    def autotools_bool_option(self, option_base_name, value):
+    def autotools_bool_arg(self, arg_base_name, value):
         prefix = "--enable-" if value else "--disable-"
 
-        return prefix + option_base_name
+        return prefix + arg_base_name
 
 
     def chmod_files(self, dir, mode):
