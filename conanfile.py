@@ -1,6 +1,7 @@
 from conans import ConanFile, ConfigureEnvironment
 import os
 from os import path
+import multiprocessing
 from conans.tools import download, unzip, untargz, check_sha256
 
 class SodiumConanFile(ConanFile):
@@ -63,7 +64,7 @@ class SodiumConanFile(ConanFile):
     def configure_and_make(self):
         env = ConfigureEnvironment(self.deps_cpp_info, self.settings)
         self.run_configure(env)
-        self.run("%s make" % env.command_line)
+        self.run("%s make -j %i" % (env.command_line, multiprocessing.cpu_count()))
         self.run("%s make install" % env.command_line)
 
     def run_configure(self, env):
