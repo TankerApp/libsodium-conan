@@ -1,8 +1,7 @@
 from conans import ConanFile, AutoToolsBuildEnvironment
 import os
 from os import path
-import multiprocessing
-from conans.tools import download, unzip, untargz, check_sha256
+from conans.tools import download, unzip, untargz, check_sha256, cpu_count
 
 class SodiumConanFile(ConanFile):
     name        = "libsodium"
@@ -66,7 +65,7 @@ class SodiumConanFile(ConanFile):
         configure_args = self.get_configure_args()
         print("./configure", " ".join(configure_args))
         env.configure(args=configure_args)
-        env.make(args=["-j", str(multiprocessing.cpu_count())])
+        env.make(args=["-j", str(cpu_count())])
         env.make(args=["install"])
 
     def get_configure_args(self):
